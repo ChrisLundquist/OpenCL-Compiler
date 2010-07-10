@@ -135,13 +135,15 @@ const char* read_source(const char* file_path)
 void clean(cl_context* contexts, cl_program* programs)
 {
     if(programs != NULL && *programs != NULL){
-        clReleaseProgram(*programs);
+        if( CL_SUCCESS != clReleaseProgram(*programs))
+            std::cerr << "Unable to release program" << std::endl;
     }else
         std::cerr << "Unable to release program" << std::endl;
 
 
     if(contexts != NULL && *contexts != NULL){
-        clReleaseContext(*contexts);
+        if(CL_SUCCESS != clReleaseContext(*contexts))
+            std::cerr << "Unable to release context" << std::endl;
     }else
         std::cerr << "Unable to release context" << std::endl;
 }
