@@ -1,0 +1,27 @@
+This is a hopefully platform independent opencl compiler that spits out error messages and the like from your kernels.
+
+
+Usage:
+./compiler my_kernel.cl
+
+Examples:
+
+(good)
+./compiler samples/test.cl
+Found 1 platform(s)
+NVIDIA CUDA
+Found 1 devices
+Created context
+compiled samples/test.cl successfully
+
+(bad)
+./compiler samples/test.cl
+Found 1 platform(s)
+NVIDIA CUDA
+Found 1 devices
+Created context
+Error Code: 0
+:2: error: ilegal address space on image or sampler type
+__constant sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP_TO_EDGE | CLK_FILTER_NEAREST;
+^
+
