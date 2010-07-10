@@ -132,6 +132,20 @@ const char* read_source(const char* file_path)
     return buffer;
 }
 
+void clean(cl_context* contexts, cl_program* programs)
+{
+    if(programs != NULL && *programs != NULL){
+        clReleaseProgram(*programs);
+    }else
+        std::cerr << "Unable to release program" << std::endl;
+
+
+    if(contexts != NULL && *contexts != NULL){
+        clReleaseContext(*contexts);
+    }else
+        std::cerr << "Unable to release context" << std::endl;
+}
+
 int main(int argc, char** argv)
 {
     // Platforms
@@ -242,7 +256,7 @@ int main(int argc, char** argv)
      }
     // TODO change this from argv1 to all of them
     std::cout << "compiled " << argv[1] << " successfully" << std::endl;
-
+    clean(&compiler_context, &target_program);
     return 0;
 }
 
