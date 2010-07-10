@@ -217,7 +217,11 @@ int main(int argc, char** argv)
         char buffer[4096];
         //FIXME Get the build log for all devices, not just the first
         int status = clGetProgramBuildInfo(target_program,devices[0], CL_PROGRAM_BUILD_STATUS,0,NULL,NULL);
-        if(status == CL_BUILD_NONE)
+        if(0 == status)
+        {
+            // We dont care
+        }
+        else if(status == CL_BUILD_NONE)
         {
             std::cerr << "CL_BUILD_NONE was returned" << std::endl;
             return false;
