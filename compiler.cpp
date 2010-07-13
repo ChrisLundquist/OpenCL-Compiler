@@ -101,31 +101,31 @@ const char* read_source(const char* file_path)
     FILE * from = fopen(file_path, "r");
     char* buffer = NULL;
 
-        if(!from)
-        {
-            std::cerr << "Couldn't open kernel source file of '" << file_path << "'" << std::endl;
-            return false;
-        }
+    if(!from)
+    {
+        std::cerr << "Couldn't open kernel source file of '" << file_path << "'" << std::endl;
+        return false;
+    }
 
-        const unsigned int position_status = fseek(from, 0, SEEK_END);
-        const unsigned long size = ftell(from);
-        rewind(from);
+    const unsigned int position_status = fseek(from, 0, SEEK_END);
+    const unsigned long size = ftell(from);
+    rewind(from);
 
-        if(-1 == position_status || size == -1)
-        {
-            std::cerr << "Couldn't get positions in kernel source file" << std::endl;
-            return false;
-        }
+    if((unsigned int)(-1) == position_status || size == (unsigned int) -1 )
+    {
+        std::cerr << "Couldn't get positions in kernel source file" << std::endl;
+        return false;
+    }
 
-        buffer = new char[size + 1];
+    buffer = new char[size + 1];
 
-        if(fread(buffer, 1, size, from) != size)
-        {
-            std::cerr << "An error occured when reading kernel source file" << std::endl;
-            return false;
-        }
+    if(fread(buffer, 1, size, from) != size)
+    {
+        std::cerr << "An error occured when reading kernel source file" << std::endl;
+        return false;
+    }
 
-        buffer[size] = '\0';
+    buffer[size] = '\0';
 
     fclose(from);
 
@@ -225,12 +225,19 @@ int main(int argc, char** argv)
         {
             std::cerr << "Host ran out of memory when attempting to build the target program" << std::endl;
             return false;
+        } else
+        {
+            std::cerr << "Encountered error with return code " << return_code  << std::endl;
+            return false;
         }
 
     }
-     if(CL_SUCCESS != clBuildProgram(target_program, num_devices, devices,/* OPTIONS */ NULL, NULL, NULL))
-     {
-        char buffer[4096];
+    if(CL_SUCCESS != clBuildProgram(target_program, num_devices, devices,/* OPTIONS */ NULL, NULL, NULL))
+    {
+//
+#define ERROR_BUFFER_SIZE 4096 * 8
+        char* buffer = new char[ERROR_BUFFER_SIZE];
+
         //FIXME Get the build log for all devices, not just the first
         int status = clGetProgramBuildInfo(target_program,devices[0], CL_PROGRAM_BUILD_STATUS,0,NULL,NULL);
         if(0 == status)
@@ -250,12 +257,18 @@ int main(int argc, char** argv)
             std::cout << "Error Code: " << status << std::endl;
         }
 
-        clGetProgramBuildInfo(target_program, devices[0], CL_PROGRAM_BUILD_LOG, 4096, &buffer, NULL);
-        
-        for(unsigned int i = 0; i < 4096 && buffer[i]; ++i)
-            std::cerr << buffer[i];
+        status = clGetProgramBuildInfo(target_program, devices[0], CL_PROGRAM_BUILD_LOG, ERROR_BUFFER_SIZE, buffer, NULL);
+        if(CL_SUCCESS == status)
+            for(unsigned int i = 0; i < ERROR_BUFFER_SIZE && buffer[i]; ++i)
+                std::cerr << buffer[i];
+        else if(CL_INVALID_VALUE == status)
+            std::cerr << "Invalid value when attempting to fetch build log, the error log\
+                          may have been bigger than the error buffer size of: " << ERROR_BUFFER_SIZE << "bytes" << std::endl;
+        else
+            std::cerr << "Unable to fetch build log" << status << std::endl;
+
         return false;
-     }
+    }
     // TODO change this from argv1 to all of them
     std::cout << "compiled " << argv[1] << " successfully" << std::endl;
     clean(&compiler_context, &target_program);
