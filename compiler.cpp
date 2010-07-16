@@ -1,11 +1,13 @@
 #include <iostream> // std::cout, std::err, std::endl
 #include <stdio.h>
 #include <CL/cl.h> // cl*
+#ifndef _WIN32
 #include <getopt.h>
+#endif
 
 
 #define NVIDIA_PLATFORM "NVIDIA CUDA"
-#define ATI_PLATFORM
+#define ATI_PLATFORM "ATI Stream"
 
 int get_platform_name( cl_platform_id* platform )
 {
@@ -89,7 +91,12 @@ bool get_devices(cl_platform_id* target_platform, cl_device_id** devices, cl_uin
 
 // as specified in OpenCL document section 4.3
 // TODO: This is our responsibility to be thread safe
+#ifdef _WIN32
+void __stdcall log_context_errors(const char *errinfo, const void *private_info, size_t cb, void *user_data)
+#else
 void log_context_errors(const char *errinfo, const void *private_info, size_t cb, void *user_data)
+#endif
+
 {
     std::cerr << *errinfo << std::endl;
 

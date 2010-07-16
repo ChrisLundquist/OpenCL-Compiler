@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="Windows-1252"?>
+<VisualStudioPropertySheet
+	ProjectType="Visual C++"
+	Version="8.00"
+	Name="openclsdk_debug_x64"
+	OutputDirectory="$(ATISTREAMSDKSAMPLESROOT)\samples\opencl\bin\debug\x86_64"
+	IntermediateDirectory="$(ConfigurationName)\$(PlatformName)"
+	EnableManagedIncrementalBuild="0"
+	>
+	<Tool
+		Name="VCCLCompilerTool"
+		Optimization="0"
+		AdditionalIncludeDirectories="&quot;$(ATISTREAMSDKROOT)\include&quot;;&quot;$(ATISTREAMSDKSAMPLESROOT)\include&quot;"
+		PreprocessorDefinitions="ATI_OS_WIN"
+		BasicRuntimeChecks="3"
+		RuntimeLibrary="1"
+		WarningLevel="3"
+		DebugInformationFormat="3"
+	/>
+	<Tool
+		Name="VCLinkerTool"
+		AdditionalDependencies="OpenCL.lib SDKUtil.lib"
+		AdditionalLibraryDirectories="&quot;$(ATISTREAMSDKROOT)\lib\x86_64&quot;;&quot;$(ATISTREAMSDKSAMPLESROOT)\lib\x86_64&quot;;&quot;$(ATISTREAMSDKSAMPLESROOT)\TempSDKUtil\lib\debug\x86_64&quot;"
+		GenerateDebugInformation="true"
+	/>
+</VisualStudioPropertySheet>
