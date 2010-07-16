@@ -1,93 +1,12 @@
 #include <iostream> // std::cout, std::err, std::endl
 #include <stdio.h>
 #include <CL/cl.h> // cl*
+#include "platform.h"
+#include "device.h"
 #ifndef _WIN32
-#include <getopt.h>
+#include <getopt.h> // TODO: Add getopt options for Linux and Windows
 #endif
 
-
-#define NVIDIA_PLATFORM "NVIDIA CUDA"
-#define ATI_PLATFORM "ATI Stream"
-
-int get_platform_name( cl_platform_id* platform )
-{
-    // clGetPlatformInfo needs a place to put its name
-    char platform_string[32];
-
-    if(CL_SUCCESS == clGetPlatformInfo(*platform, CL_PLATFORM_NAME, 32, &platform_string, NULL))
-    {
-        std::cout << platform_string << std::endl;
-    } else{
-        std::cerr << "Couldn't get plaform info for " << platform << std::endl;
-    }
-    return CL_SUCCESS;
-}
-
-// Sets the passed pointer platforms to an array of all discovered platforms
-int get_platforms( cl_platform_id** platforms, cl_uint* num_platforms)
-{
-    // Find the number of platforms
-    if(CL_SUCCESS != clGetPlatformIDs(0, NULL, num_platforms))
-    {
-        std::cerr << "Error when asking information on OpenCL platforms" << std::endl;
-        return false;
-    }
-
-    // Make sure they have at least one platform
-    if(num_platforms == 0)
-    {
-        std::cerr << "No OpenCL platforms were found" << std::endl;
-        return false;
-    }
-
-    // Tell them of our new found success! :)
-    std::cout << "Found " << *num_platforms << " platform(s)" << std::endl;
-
-    // Allocate memory to store our platform IDs
-    *platforms = new cl_platform_id[*num_platforms];
-
-    // Ask it to put the platforms in the space we provided
-    if(CL_SUCCESS != clGetPlatformIDs(*num_platforms, *platforms, NULL))
-        std::cerr << "Failed to get the the platform ids" << std::endl;
-
-    // print the name of each of the detected platforms
-    for(unsigned char i = 0; i < *num_platforms; ++i)
-        get_platform_name(platforms[i]);
-
-    return true;
-}
-
-
-// return the device_ids for a target platform into the pointer passed
-bool get_devices(cl_platform_id* target_platform, cl_device_id** devices, cl_uint* num_devices)
-{
-    // Make sure we can reallocate this
-    if(devices == NULL)
-        return false;
-    // and this
-    if(target_platform == NULL || *target_platform == NULL)
-        return false;
-
-    // query for number of devices
-    if(CL_SUCCESS != clGetDeviceIDs(*target_platform,CL_DEVICE_TYPE_ALL, NULL,NULL, num_devices))
-    {
-        std::cerr << "Could not fetch the number of devices for target platform " << *target_platform << std::endl;
-        return false;
-    }
-    std::cout << "Found " << *num_devices << " devices" << std::endl;
-
-    // Allocate the memory to store the device ids
-    *devices = new cl_device_id[*num_devices];
-
-    // Query for device ids
-    if(CL_SUCCESS != clGetDeviceIDs(*target_platform,CL_DEVICE_TYPE_ALL, *num_devices, *devices, NULL))
-    {
-        std::cerr << "Could not fetch the device ids" << std::endl;
-        return false;
-    }
-
-    return true;
-}
 
 // as specified in OpenCL document section 4.3
 // TODO: This is our responsibility to be thread safe
@@ -96,7 +15,6 @@ void __stdcall log_context_errors(const char *errinfo, const void *private_info,
 #else
 void log_context_errors(const char *errinfo, const void *private_info, size_t cb, void *user_data)
 #endif
-
 {
     std::cerr << *errinfo << std::endl;
 

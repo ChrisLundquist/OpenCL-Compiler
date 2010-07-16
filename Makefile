@@ -15,8 +15,8 @@ all: compiler$(EXE)
 %.o: %.cpp
 	$(CXX) $(CXXFLAGS) $(INCPATH) $(LIBS) $<
 
-compiler$(EXE): compiler.o
-	    $(CXX) $(LFLAGS) $(LIBS) -o $@ $<
+compiler$(EXE): compiler.o platform.o device.o
+	    $(CXX) $(LFLAGS) $(LIBS) -o $@ $+
 
 clean:
 	rm *.o compiler$(EXE)
