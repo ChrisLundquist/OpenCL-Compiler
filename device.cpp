@@ -30,7 +30,7 @@ bool get_devices(cl_platform_id* target_platform, cl_device_id** devices, cl_uin
     }
 
     for( unsigned int i = 0; i < *num_devices; ++i){
-        print_device_specs(*devices[i]);
+        print_device_specs((*devices)[i]);
     }
 
     return true;

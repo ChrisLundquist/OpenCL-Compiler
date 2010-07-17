@@ -276,7 +276,23 @@
 				RelativePath="..\compiler.cpp"
 				>
 			</File>
+			<File
+				RelativePath="..\device.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\platform.cpp"
+				>
+			</File>
 		</Filter>
+		<File
+			RelativePath="..\device.h"
+			>
+		</File>
+		<File
+			RelativePath="..\platform.h"
+			>
+		</File>
 	</Files>
 	<Globals>
 	</Globals>
