@@ -41,7 +41,9 @@ bool print_device_specs(cl_device_id device)
     char* info = NULL;
     cl_uint* frequency = 0;
     size_t* max_work_item_sizes = NULL;
+    size_t* max_work_group_size = NULL;
     cl_uint*  max_work_item_dimensions = NULL;
+    cl_uint*  max_work_item_compute_units= NULL;
 
     info = (char*) get_device_info(device, CL_DEVICE_VENDOR);
     std::cout << "Device Vendor: " << info << std::endl;
@@ -55,9 +57,12 @@ bool print_device_specs(cl_device_id device)
     std::cout << "Device Clock Frequency: " << *frequency << std::endl;
     delete frequency;
 
+    max_work_group_size = (size_t*) get_device_info(device, CL_DEVICE_MAX_WORK_GROUP_SIZE );
+    std::cout << "Device Work Group Size: " << *max_work_group_size << std::endl;
+    delete max_work_group_size;
+
     // Get the max dimensions so we know how many times to loop through sizes
     max_work_item_dimensions = (cl_uint*) get_device_info(device, CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS);
-
     max_work_item_sizes = (size_t*) get_device_info(device, CL_DEVICE_MAX_WORK_ITEM_SIZES);
     std::cout << "Device Work Item Sizes: ";
     for(unsigned char i = 0; i < *max_work_item_dimensions; ++i)
@@ -66,6 +71,11 @@ bool print_device_specs(cl_device_id device)
 
     delete max_work_item_dimensions;
     delete max_work_item_sizes;
+
+    // NOTE: reusing max_work_item_dimensions as max_compute_units
+    max_work_item_compute_units= (cl_uint*) get_device_info(device, CL_DEVICE_MAX_COMPUTE_UNITS);
+    std::cout << "Device Compute Units: " << *max_work_item_compute_units << std::endl;
+    delete max_work_item_compute_units;
 
     info = (char*) get_device_info(device, CL_DEVICE_EXTENSIONS);
     std::cout << "Device Extentions: " << info << std::endl;
