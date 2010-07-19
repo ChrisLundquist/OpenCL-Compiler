@@ -5,9 +5,6 @@
 #include "device.h"
 #include <unistd.h>
 #include <string>
-#ifndef _WIN32
-#include <getopt.h> // TODO: Add getopt options for Linux and Windows
-#endif
 
 
 // as specified in OpenCL document section 4.3
@@ -104,26 +101,18 @@ int main(int argc, char** argv)
 
     int option = 0;
     bool print_device_info = 0;
-    char* input_file = NULL;
-    unsigned int num_input_files = 0;
     std::string compiler_options;
 
-    while ((option = getopt(argc, argv, "DIsc:")) != -1)
+    while ((option = getopt(argc, argv, "D:I:s")) != -1)
         switch (option)
         {
             case 'I': // Include Path
-                compiler_options += " -I .";
-                //FIXME: optarg seems to be null
-                //compiler_options += optarg;
+                compiler_options += " -I";
+                compiler_options += optarg;
                 break;
             case 'D': // #define
-                //compiler_options += " -D ";
-                //FIXME: optarg seems to be null
-                //compiler_options += optarg;
-                break;
-            case 'c': // input source file
-                input_file = optarg;
-                num_input_files++;
+                compiler_options += " -D ";
+                compiler_options += optarg;
                 break;
             case 's': //TODO honor this flag
                 print_device_info = 1;
@@ -139,10 +128,9 @@ int main(int argc, char** argv)
             default:
                 return false;
         }
-    // Stop Here if we have no input
-    if(input_file == NULL)
-    {
-        std::cerr << "No input file specified by -c" << std::endl;
+
+    if(optind >= argc) {
+        std::cerr << "No input file specfied.";
         return false;
     }
 
@@ -176,81 +164,84 @@ int main(int argc, char** argv)
         return false;
     }
     std::cout << "Created context" << std::endl;
-    const char* source = read_source(input_file);
-
-    if(!source)
-        return false;
-
-    target_program = clCreateProgramWithSource(compiler_context, 1, &source, NULL, &return_code);
-
-    // Check if something went wrong
-    if(target_program == NULL)
+    for( int file_index = optind; file_index < argc; file_index++)
     {
-        if(return_code == CL_INVALID_CONTEXT)
-        {
-            std::cerr << "Invalid OpenCL Context passed when attempting to create a program from source" << std::endl;
-            return false;
-        }
-        else if( return_code == CL_INVALID_VALUE)
-        {
-            std::cerr << "Invalid value passed when attempting to create a program from source" << std::endl;
-            return false;
-        }
-        else if ( return_code == CL_COMPILER_NOT_AVAILABLE)
-        {
-            std::cerr << "Compiler not available to build the program from source" << std::endl;
-            return false;
-        }
-        else if ( return_code == CL_OUT_OF_HOST_MEMORY)
-        {
-            std::cerr << "Host ran out of memory when attempting to build the target program" << std::endl;
-            return false;
-        } else
-        {
-            std::cerr << "Encountered error with return code " << return_code  << std::endl;
-            return false;
-        }
+        const char* source = read_source(argv[file_index]);
 
-    }
-    if(CL_SUCCESS != clBuildProgram(target_program, num_devices, devices,/* OPTIONS */ compiler_options.c_str(), NULL, NULL))
-    {
-        //
+        if(!source)
+            return false;
+
+        target_program = clCreateProgramWithSource(compiler_context, 1, &source, NULL, &return_code);
+
+        // Check if something went wrong
+        if(target_program == NULL)
+        {
+            if(return_code == CL_INVALID_CONTEXT)
+            {
+                std::cerr << "Invalid OpenCL Context passed when attempting to create a program from source" << std::endl;
+                return false;
+            }
+            else if( return_code == CL_INVALID_VALUE)
+            {
+                std::cerr << "Invalid value passed when attempting to create a program from source" << std::endl;
+                return false;
+            }
+            else if ( return_code == CL_COMPILER_NOT_AVAILABLE)
+            {
+                std::cerr << "Compiler not available to build the program from source" << std::endl;
+                return false;
+            }
+            else if ( return_code == CL_OUT_OF_HOST_MEMORY)
+            {
+                std::cerr << "Host ran out of memory when attempting to build the target program" << std::endl;
+                return false;
+            } else
+            {
+                std::cerr << "Encountered error with return code " << return_code  << std::endl;
+                return false;
+            }
+
+        }
+        if(CL_SUCCESS != clBuildProgram(target_program, num_devices, devices,/* OPTIONS */ compiler_options.c_str(), NULL, NULL))
+        {
+            //
 #define ERROR_BUFFER_SIZE 4096 * 8
-        char* buffer = new char[ERROR_BUFFER_SIZE];
+            char* buffer = new char[ERROR_BUFFER_SIZE];
 
-        //FIXME Get the build log for all devices, not just the first
-        int status = clGetProgramBuildInfo(target_program,devices[0], CL_PROGRAM_BUILD_STATUS,0,NULL,NULL);
-        if(0 == status)
-        {
-            // We dont care
-        }
-        else if(status == CL_BUILD_NONE)
-        {
-            std::cerr << "CL_BUILD_NONE was returned" << std::endl;
+            //FIXME Get the build log for all devices, not just the first
+            int status = clGetProgramBuildInfo(target_program,devices[0], CL_PROGRAM_BUILD_STATUS,0,NULL,NULL);
+            if(0 == status)
+            {
+                // We dont care
+            }
+            else if(status == CL_BUILD_NONE)
+            {
+                std::cerr << "CL_BUILD_NONE was returned" << std::endl;
+                return false;
+            } else if (status == CL_BUILD_ERROR )
+            {
+                std::cerr << "CL_BUILD_ERROR\n\n" << std::endl;
+            }
+            else {
+                // print the status so we can look at cl.h
+                std::cout << "Error Code: " << status << std::endl;
+            }
+
+            status = clGetProgramBuildInfo(target_program, devices[0], CL_PROGRAM_BUILD_LOG, ERROR_BUFFER_SIZE, buffer, NULL);
+            if(CL_SUCCESS == status)
+                for(unsigned int i = 0; i < ERROR_BUFFER_SIZE && buffer[i]; ++i)
+                    std::cerr << buffer[i];
+            else if(CL_INVALID_VALUE == status)
+                std::cerr << "Invalid value when attempting to fetch build log, the error log\
+                    may have been bigger than the error buffer size of: " << ERROR_BUFFER_SIZE << "bytes" << std::endl;
+            else
+                std::cerr << "Unable to fetch build log" << status << std::endl;
+
             return false;
-        } else if (status == CL_BUILD_ERROR )
-        {
-            std::cerr << "CL_BUILD_ERROR\n\n" << std::endl;
         }
-        else {
-            // print the status so we can look at cl.h
-            std::cout << "Error Code: " << status << std::endl;
-        }
-
-        status = clGetProgramBuildInfo(target_program, devices[0], CL_PROGRAM_BUILD_LOG, ERROR_BUFFER_SIZE, buffer, NULL);
-        if(CL_SUCCESS == status)
-            for(unsigned int i = 0; i < ERROR_BUFFER_SIZE && buffer[i]; ++i)
-                std::cerr << buffer[i];
-        else if(CL_INVALID_VALUE == status)
-            std::cerr << "Invalid value when attempting to fetch build log, the error log\
-                may have been bigger than the error buffer size of: " << ERROR_BUFFER_SIZE << "bytes" << std::endl;
-        else
-            std::cerr << "Unable to fetch build log" << status << std::endl;
-
-        return false;
+        // TODO change this from argv1 to all of them
+        std::cout << "compiled " << argv[1] << " successfully" << std::endl;
     }
-    // TODO change this from argv1 to all of them
-    std::cout << "compiled " << input_file << " successfully" << std::endl;
     clean(&compiler_context, &target_program);
     return 0;
 }
