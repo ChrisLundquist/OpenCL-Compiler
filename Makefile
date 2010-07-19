@@ -2,6 +2,7 @@
 CC            = gcc
 CXX           = g++
 DEFINES       = 
+DEBUG_FLAGS   = 
 CFLAGS        = -pipe -O2 -Wall -Wextra -pedantic $(DEFINES) -c
 CXXFLAGS      = -pipe -O2 -Wall -Wextra -pedantic $(DEFINES) -c
 INCPATH       = -I ./include
@@ -13,10 +14,10 @@ EXE           =
 all: compiler$(EXE)
 
 %.o: %.cpp
-	$(CXX) $(CXXFLAGS) $(INCPATH) $(LIBS) $<
+	$(CXX) $(DEBUG_FLAGS) $(CXXFLAGS) $(INCPATH) $(LIBS) $<
 
 compiler$(EXE): compiler.o platform.o device.o
-	    $(CXX) $(LFLAGS) $(LIBS) -o $@ $+
+	    $(CXX) $(DEBUG_FLAGS) $(LFLAGS) $(LIBS) -o $@ $+
 
 clean:
 	rm *.o compiler$(EXE)

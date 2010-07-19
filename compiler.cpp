@@ -3,6 +3,8 @@
 #include <CL/cl.h> // cl*
 #include "platform.h"
 #include "device.h"
+#include <unistd.h>
+#include <string>
 #ifndef _WIN32
 #include <getopt.h> // TODO: Add getopt options for Linux and Windows
 #endif
@@ -16,9 +18,19 @@ void __stdcall log_context_errors(const char *errinfo, const void *private_info,
 void log_context_errors(const char *errinfo, const void *private_info, size_t cb, void *user_data)
 #endif
 {
-    std::cerr << *errinfo << std::endl;
+    std::cerr << errinfo << std::endl;
+    for(unsigned int i = 0; i < cb; i++)
+    {
+        std::cout << ((char*)private_info)[i];
+    }
+    std::cout << std::endl;
 
-    std::cout << private_info;
+    //FIXME what is user_data?
+    for(unsigned int i = 0; i < cb; i++)
+    {
+        std::cout << ((char*)user_data)[i];
+    }
+    std::cout << std::endl;
 }
 
 const char* read_source(const char* file_path)
@@ -90,6 +102,50 @@ int main(int argc, char** argv)
     // Programs
     cl_program target_program = NULL;
 
+    int option = 0;
+    bool print_device_info = 0;
+    char* input_file = NULL;
+    unsigned int num_input_files = 0;
+    std::string compiler_options;
+
+    while ((option = getopt(argc, argv, "DIsc:")) != -1)
+        switch (option)
+        {
+            case 'I': // Include Path
+                compiler_options += " -I .";
+                //FIXME: optarg seems to be null
+                //compiler_options += optarg;
+                break;
+            case 'D': // #define
+                //compiler_options += " -D ";
+                //FIXME: optarg seems to be null
+                //compiler_options += optarg;
+                break;
+            case 'c': // input source file
+                input_file = optarg;
+                num_input_files++;
+                break;
+            case 's': //TODO honor this flag
+                print_device_info = 1;
+                break;
+            case '?':
+                if (isprint (optopt))
+                    fprintf (stderr, "Unknown option `-%c'.\n", optopt);
+                else
+                    fprintf (stderr,
+                            "Unknown option character `\\x%x'.\n",
+                            optopt);
+                return 1;
+            default:
+                return false;
+        }
+    // Stop Here if we have no input
+    if(input_file == NULL)
+    {
+        std::cerr << "No input file specified by -c" << std::endl;
+        return false;
+    }
+
     if(!get_platforms(&platforms,&num_platforms))
         return false;
     // TODO filter platforms for any options passed
@@ -120,8 +176,7 @@ int main(int argc, char** argv)
         return false;
     }
     std::cout << "Created context" << std::endl;
-    // TODO change this from argv1 to all of them
-    const char* source = read_source(argv[1]);
+    const char* source = read_source(input_file);
 
     if(!source)
         return false;
@@ -157,9 +212,9 @@ int main(int argc, char** argv)
         }
 
     }
-    if(CL_SUCCESS != clBuildProgram(target_program, num_devices, devices,/* OPTIONS */ NULL, NULL, NULL))
+    if(CL_SUCCESS != clBuildProgram(target_program, num_devices, devices,/* OPTIONS */ compiler_options.c_str(), NULL, NULL))
     {
-//
+        //
 #define ERROR_BUFFER_SIZE 4096 * 8
         char* buffer = new char[ERROR_BUFFER_SIZE];
 
@@ -188,14 +243,14 @@ int main(int argc, char** argv)
                 std::cerr << buffer[i];
         else if(CL_INVALID_VALUE == status)
             std::cerr << "Invalid value when attempting to fetch build log, the error log\
-                          may have been bigger than the error buffer size of: " << ERROR_BUFFER_SIZE << "bytes" << std::endl;
+                may have been bigger than the error buffer size of: " << ERROR_BUFFER_SIZE << "bytes" << std::endl;
         else
             std::cerr << "Unable to fetch build log" << status << std::endl;
 
         return false;
     }
     // TODO change this from argv1 to all of them
-    std::cout << "compiled " << argv[1] << " successfully" << std::endl;
+    std::cout << "compiled " << input_file << " successfully" << std::endl;
     clean(&compiler_context, &target_program);
     return 0;
 }
