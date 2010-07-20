@@ -1,27 +1,89 @@
-This is a hopefully platform independent opencl compiler that spits out error messages and the like from your kernels.
+A Development Tool
+This is a hopefully platform independent opencl "compiler" that spits out error messages and the like from your kernels. At present, it does not support
+outputting the compiled file as binary.
 
+==Usage==
+./compiler my_kernel.cl -I include/path/to/header.cl -D __DEFINE__
 
-Usage:
-./compiler my_kernel.cl
+==Important Notes==
+There are often direct conficts in acceptable syntax between platforms. As seen below in examples. I have no control over this.
 
-Examples:
-
-(good)
+==Examples==
+=The Good=
+$ make test
 ./compiler samples/test.cl
-Found 1 platform(s)
+Found 2 platform(s)
+ATI Stream
 NVIDIA CUDA
 Found 1 devices
+Device Vendor: AuthenticAMD
+Device Name: AMD Phenom(tm) II X4 955 Processor
+Device Clock Frequency: 3200
+Device Work Group Size: 1024
+Device Work Item Sizes: 1024x1024x1024
+Device Compute Units: 4
+Device Extentions: cl_khr_icd cl_khr_global_int32_base_atomics cl_khr_global_int32_extended_atomics cl_khr_local_int32_base_atomics cl_khr_local_int32_extended_atomics cl_khr_int64_base_atomics cl_khr_int64_extended_atomics cl_khr_byte_addressable_store 
 Created context
 compiled samples/test.cl successfully
 
-(bad)
-./compiler samples/test.cl
-Found 1 platform(s)
-NVIDIA CUDA
 Found 1 devices
+Device Vendor: NVIDIA Corporation
+Device Name: GeForce 9800 GT
+Device Clock Frequency: 1625
+Device Work Group Size: 512
+Device Work Item Sizes: 512x512x64
+Device Compute Units: 14
+Device Extentions: cl_khr_byte_addressable_store cl_khr_icd cl_khr_gl_sharing cl_nv_compiler_options cl_nv_device_attribute_query cl_nv_pragma_unroll  cl_khr_global_int32_base_atomics cl_khr_global_int32_extended_atomics 
 Created context
-Error Code: 0
+compiled samples/test.cl successfully
+
+
+=The Bad=
+NVIDIA CUDA
 :2: error: ilegal address space on image or sampler type
 __constant sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP_TO_EDGE | CLK_FILTER_NEAREST;
 ^
 
+< insert converse AMD/ATI error here >
+
+=The Ugly=
+$ ./compiler simple_me.cl -I .
+Found 2 platform(s)
+ATI Stream
+NVIDIA CUDA
+Found 1 devices
+Device Vendor: AuthenticAMD
+Device Name: AMD Phenom(tm) II X4 955 Processor
+Device Clock Frequency: 3200
+Device Work Group Size: 1024
+Device Work Item Sizes: 1024x1024x1024x
+Device Compute Units: 4
+Device Extentions: cl_khr_icd cl_khr_global_int32_base_atomics cl_khr_global_int32_extended_atomics cl_khr_local_int32_base_atomics cl_khr_local_int32_extended_atomics cl_khr_int64_base_atomics cl_khr_int64_extended_atomics cl_khr_byte_addressable_store 
+Created context
+./images.hl(44): error: vector operation requires identical element types
+      coord = min( max( coord, (int2)(0) ), (param.size - (int2)(1)) );
+                                                          ^
+
+./images.hl(44): error: bad argument type to opencl builtin function: expected
+          type "int2", actual type "<error-type>"
+      coord = min( max( coord, (int2)(0) ), (param.size - (int2)(1)) );
+                                            ^
+
+2 errors detected in the compilation of "/tmp/OCL2zqTtW.cl".
+Found 1 devices
+Device Vendor: NVIDIA Corporation
+Device Name: GeForce 9800 GT
+Device Clock Frequency: 1625
+Device Work Group Size: 512
+Device Work Item Sizes: 512x512x64x
+Device Compute Units: 14
+Device Extentions: cl_khr_byte_addressable_store cl_khr_icd cl_khr_gl_sharing cl_nv_compiler_options cl_nv_device_attribute_query cl_nv_pragma_unroll  cl_khr_global_int32_base_atomics cl_khr_global_int32_extended_atomics 
+Created context
+ptxas application ptx input, line 175; fatal   : Parsing error near '-': syntax error
+ptxas fatal   : Ptx assembly aborted due to errors
+error   : Ptx compilation failed: gpu='sm_11', device code='anonymous_jit_identity'
+: Retrieving binary for 'anonymous_jit_identity', for gpu='sm_11', usage mode=''
+: Considering profile 'compute_10' for gpu='sm_11' in 'anonymous_jit_identity'
+: Control flags for 'anonymous_jit_identity' disable search path
+: Ptx binary found for 'anonymous_jit_identity', architecture='compute_10'
+: Ptx compilation for 'anonymous_jit_identity', for gpu='sm_11', ocg options=''
