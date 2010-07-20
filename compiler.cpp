@@ -134,115 +134,118 @@ int main(int argc, char** argv)
         return false;
     }
 
-    if(!get_platforms(&platforms,&num_platforms))
+    if(!get_platforms(&platforms, &num_platforms))
         return false;
     // TODO filter platforms for any options passed
 
-    // Get the devices for the platform
-    // TODO: Get the devices for each platform
-    if(!get_devices(platforms, &devices, &num_devices))
-        return false;
-
-    // Log any errors to std::error via log_context_errors()
-    compiler_context = clCreateContext(NULL, num_devices, devices, log_context_errors, NULL, &return_code);
-    if(return_code == CL_INVALID_DEVICE)
+    for( cl_uint platform_index = 0; platform_index < num_platforms; platform_index++)
     {
-        std::cerr << "Invalid device in opencl context creation" << std::endl;
-        return false;
-    }
-    // Though documented this does not seem to be defined
-    /*else if ( return_code == CL_INVALID_DEVICE_LIST) {
-      std::cout << "This combination of devices cannot be used to create an opencl context" << std::endl;
-      return false;
-      } */
-    else if (return_code == CL_DEVICE_NOT_AVAILABLE){
-        std::cerr << "One of the devices is not available even though it may have been returned by clGetDeviceIDs()" << std::endl;
-        return false;
-    }else if(return_code == CL_OUT_OF_HOST_MEMORY)
-    {
-        std::cerr << "Host is out of memory" << std::endl;
-        return false;
-    }
-    std::cout << "Created context" << std::endl;
-    for( int file_index = optind; file_index < argc; file_index++)
-    {
-        const char* source = read_source(argv[file_index]);
-
-        if(!source)
+        // Get the devices for the platform
+        // TODO: Get the devices for each platform
+        if(!get_devices(&platforms[platform_index], &devices, &num_devices))
             return false;
 
-        target_program = clCreateProgramWithSource(compiler_context, 1, &source, NULL, &return_code);
-
-        // Check if something went wrong
-        if(target_program == NULL)
+        // Log any errors to std::error via log_context_errors()
+        compiler_context = clCreateContext(NULL, num_devices, devices, log_context_errors, NULL, &return_code);
+        if(return_code == CL_INVALID_DEVICE)
         {
-            if(return_code == CL_INVALID_CONTEXT)
-            {
-                std::cerr << "Invalid OpenCL Context passed when attempting to create a program from source" << std::endl;
-                return false;
-            }
-            else if( return_code == CL_INVALID_VALUE)
-            {
-                std::cerr << "Invalid value passed when attempting to create a program from source" << std::endl;
-                return false;
-            }
-            else if ( return_code == CL_COMPILER_NOT_AVAILABLE)
-            {
-                std::cerr << "Compiler not available to build the program from source" << std::endl;
-                return false;
-            }
-            else if ( return_code == CL_OUT_OF_HOST_MEMORY)
-            {
-                std::cerr << "Host ran out of memory when attempting to build the target program" << std::endl;
-                return false;
-            } else
-            {
-                std::cerr << "Encountered error with return code " << return_code  << std::endl;
-                return false;
-            }
-
+            std::cerr << "Invalid device in opencl context creation" << std::endl;
+            return false;
         }
-        if(CL_SUCCESS != clBuildProgram(target_program, num_devices, devices,/* OPTIONS */ compiler_options.c_str(), NULL, NULL))
+        // Though documented this does not seem to be defined
+        /*else if ( return_code == CL_INVALID_DEVICE_LIST) {
+          std::cout << "This combination of devices cannot be used to create an opencl context" << std::endl;
+          return false;
+          } */
+        else if (return_code == CL_DEVICE_NOT_AVAILABLE){
+            std::cerr << "One of the devices is not available even though it may have been returned by clGetDeviceIDs()" << std::endl;
+            return false;
+        }else if(return_code == CL_OUT_OF_HOST_MEMORY)
         {
-            //
+            std::cerr << "Host is out of memory" << std::endl;
+            return false;
+        }
+        std::cout << "Created context" << std::endl;
+        for( int file_index = optind; file_index < argc; file_index++)
+        {
+            const char* source = read_source(argv[file_index]);
+
+            if(!source)
+                return false;
+
+            target_program = clCreateProgramWithSource(compiler_context, 1, &source, NULL, &return_code);
+
+            // Check if something went wrong
+            if(target_program == NULL)
+            {
+                if(return_code == CL_INVALID_CONTEXT)
+                {
+                    std::cerr << "Invalid OpenCL Context passed when attempting to create a program from source" << std::endl;
+                    return false;
+                }
+                else if( return_code == CL_INVALID_VALUE)
+                {
+                    std::cerr << "Invalid value passed when attempting to create a program from source" << std::endl;
+                    return false;
+                }
+                else if ( return_code == CL_COMPILER_NOT_AVAILABLE)
+                {
+                    std::cerr << "Compiler not available to build the program from source" << std::endl;
+                    return false;
+                }
+                else if ( return_code == CL_OUT_OF_HOST_MEMORY)
+                {
+                    std::cerr << "Host ran out of memory when attempting to build the target program" << std::endl;
+                    return false;
+                } else
+                {
+                    std::cerr << "Encountered error with return code " << return_code  << std::endl;
+                    return false;
+                }
+
+            }
+            if(CL_SUCCESS != clBuildProgram(target_program, num_devices, devices,/* OPTIONS */ compiler_options.c_str(), NULL, NULL))
+            {
+                //
 #define ERROR_BUFFER_SIZE 4096 * 8
-            char* buffer = new char[ERROR_BUFFER_SIZE];
+                char* buffer = new char[ERROR_BUFFER_SIZE];
 
-            //FIXME Get the build log for all devices, not just the first
-            int status = clGetProgramBuildInfo(target_program,devices[0], CL_PROGRAM_BUILD_STATUS,0,NULL,NULL);
-            if(0 == status)
-            {
-                // We dont care
+                // NOTE: I believe we can just get the build log from the first device since its compiled against
+                // the same platform library.
+                for( unsigned int device_index = 0; device_index < num_devices; device_index++)
+                {
+                    int status = clGetProgramBuildInfo(target_program,devices[device_index], CL_PROGRAM_BUILD_STATUS,0,NULL,NULL);
+                    if(0 == status)
+                    {
+                        // We dont care
+                    }
+                    else if(status == CL_BUILD_NONE)
+                    {
+                        std::cerr << "CL_BUILD_NONE was returned" << std::endl;
+                        return false;
+                    } else if (status == CL_BUILD_ERROR )
+                    {
+                        std::cerr << "CL_BUILD_ERROR\n\n" << std::endl;
+                    }
+                    else {
+                        // print the status so we can look at cl.h
+                        std::cout << "Error Code: " << status << std::endl;
+                    }
+                    status = clGetProgramBuildInfo(target_program, devices[device_index], CL_PROGRAM_BUILD_LOG, ERROR_BUFFER_SIZE, buffer, NULL);
+                    if(CL_SUCCESS == status)
+                        std::cerr << buffer;
+                    else if(CL_INVALID_VALUE == status)
+                        std::cerr << "Invalid value when attempting to fetch build log, the error log\
+                            may have been bigger than the error buffer size of: " << ERROR_BUFFER_SIZE << "bytes" << std::endl;
+                    else
+                        std::cerr << "Unable to fetch build log" << status << std::endl;
+                }
             }
-            else if(status == CL_BUILD_NONE)
-            {
-                std::cerr << "CL_BUILD_NONE was returned" << std::endl;
-                return false;
-            } else if (status == CL_BUILD_ERROR )
-            {
-                std::cerr << "CL_BUILD_ERROR\n\n" << std::endl;
-            }
-            else {
-                // print the status so we can look at cl.h
-                std::cout << "Error Code: " << status << std::endl;
-            }
-
-            status = clGetProgramBuildInfo(target_program, devices[0], CL_PROGRAM_BUILD_LOG, ERROR_BUFFER_SIZE, buffer, NULL);
-            if(CL_SUCCESS == status)
-                for(unsigned int i = 0; i < ERROR_BUFFER_SIZE && buffer[i]; ++i)
-                    std::cerr << buffer[i];
-            else if(CL_INVALID_VALUE == status)
-                std::cerr << "Invalid value when attempting to fetch build log, the error log\
-                    may have been bigger than the error buffer size of: " << ERROR_BUFFER_SIZE << "bytes" << std::endl;
             else
-                std::cerr << "Unable to fetch build log" << status << std::endl;
-
-            return false;
+                std::cout << "compiled " << argv[file_index] << " successfully" << std::endl << std::endl;
         }
-        // TODO change this from argv1 to all of them
-        std::cout << "compiled " << argv[1] << " successfully" << std::endl;
+        clean(&compiler_context, &target_program);
     }
-    clean(&compiler_context, &target_program);
     return 0;
 }
 
