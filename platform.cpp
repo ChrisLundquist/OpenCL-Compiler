@@ -1,13 +1,16 @@
 #include "platform.h"
 #include <iostream> // std::cout, std::err, std::endl
+#include <assert.h>
 //#include <stdio.h>
 
-int get_platform_name( cl_platform_id* platform )
+int print_platform_name( cl_platform_id platform )
 {
     // clGetPlatformInfo needs a place to put its name
     char platform_string[32];
 
-    if(CL_SUCCESS == clGetPlatformInfo(*platform, CL_PLATFORM_NAME, 32, &platform_string, NULL))
+    assert(platform != NULL);
+
+    if(CL_SUCCESS == clGetPlatformInfo(platform, CL_PLATFORM_NAME, 32, &platform_string, NULL))
     {
         std::cout << platform_string << std::endl;
     } else{
@@ -45,7 +48,7 @@ int get_platforms( cl_platform_id** platforms, cl_uint* num_platforms)
 
     // print the name of each of the detected platforms
     for(unsigned char i = 0; i < *num_platforms; ++i)
-        get_platform_name(platforms[i]);
+        print_platform_name((*platforms)[i]);
 
     return true;
 }

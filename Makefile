@@ -2,7 +2,7 @@
 CC            = gcc
 CXX           = g++
 DEFINES       = 
-DEBUG_FLAGS   = 
+#DEBUG_FLAGS define this from the command line
 CFLAGS        = -pipe -O2 -Wall -Wextra -pedantic $(DEFINES) -c
 CXXFLAGS      = -pipe -O2 -Wall -Wextra -pedantic $(DEFINES) -c
 INCPATH       = -I ./include
@@ -22,5 +22,5 @@ compiler$(EXE): compiler.o platform.o device.o
 clean:
 	rm *.o compiler$(EXE)
 
-test:
+test: compiler$(EXE)
 	./compiler$(EXE) samples/test.cl
