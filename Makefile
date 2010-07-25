@@ -24,3 +24,6 @@ clean:
 
 test: compiler$(EXE)
 	./compiler$(EXE) samples/test.cl
+
+mac: compiler.o platform.o device.o
+	$(CXX) $(DEBUG_FLAGS) -framework OpenCL -o $@ $+
