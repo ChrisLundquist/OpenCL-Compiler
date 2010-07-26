@@ -11,16 +11,19 @@ LFLAGS        = -Wl,-O1
 LIBS          = $(SUBLIBS) -lOpenCL
 EXE           =
 
-all: compiler$(EXE)
+all: clc$(EXE)
 
 %.o: %.cpp
 	$(CXX) $(DEBUG_FLAGS) $(CXXFLAGS) $(INCPATH) $(LIBS) $<
 
-compiler$(EXE): compiler.o platform.o device.o
+clc$(EXE): clc.o platform.o device.o
 	    $(CXX) $(DEBUG_FLAGS) $(LFLAGS) $(LIBS) -o $@ $+
 
 clean:
-	rm *.o compiler$(EXE)
+	rm *.o clc$(EXE)
 
-test: compiler$(EXE)
-	./compiler$(EXE) samples/test.cl
+test: clc$(EXE)
+	./clc$(EXE) samples/test.cl
+
+install:
+	install clc$(EXE) /usr/local/bin 

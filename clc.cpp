@@ -130,7 +130,7 @@ int main(int argc, char** argv)
         }
 
     if(optind >= argc) {
-        std::cerr << "No input file specfied.";
+        std::cerr << "No input file specfied." << std::endl;;
         return false;
     }
 
