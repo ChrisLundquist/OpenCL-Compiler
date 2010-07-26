@@ -27,3 +27,6 @@ test: clc$(EXE)
 
 install:
 	install clc$(EXE) /usr/local/bin 
+
+mac: clc.o platform.o device.o
+	$(CXX) $(DEBUG_FLAGS) -framework OpenCL -o $@ $+
